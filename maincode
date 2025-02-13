@@ -1,0 +1,41 @@
+import feedparser
+import requests
+
+# Discord Webhook URL
+DISCORD_WEBHOOK_URL = 'https://discord.com/api/webhooks/1339418503416905728/dcuSivzNerI9Po6Hd3lOrgrsAWuePIbzqedO3quaHomsQL4faSMFcaRf008P-M3P3WVw'
+
+# Twitter RSS feed URL
+TWITTER_RSS_FEED_URL = 'https://nitter.net/adamschefter/rss'
+
+def fetch_tweets_from_rss():
+    # Parse the RSS feed from the Twitter account
+    feed = feedparser.parse(TWITTER_RSS_FEED_URL)
+    
+    tweets = []
+    for entry in feed.entries:
+        tweet_message = entry.title  # Entry title contains the tweet text
+        tweets.append(tweet_message)
+    
+    return tweets
+
+def send_to_discord(message):
+    # Send the tweet message to the Discord webhook
+    data = {
+        "content": message
+    }
+    response = requests.post(DISCORD_WEBHOOK_URL, json=data)
+    if response.status_code != 200:
+        print(f"Failed to send message to Discord: {response.status_code}")
+    else:
+        print("Message sent to Discord successfully!")
+
+def main():
+    # Fetch tweets from RSS feed
+    tweets = fetch_tweets_from_rss()
+    
+    # Send the latest tweet to Discord (you can modify this to send multiple tweets if needed)
+    if tweets:
+        send_to_discord(tweets[0])  # Send the most recent tweet
+
+if __name__ == "__main__":
+    main()
