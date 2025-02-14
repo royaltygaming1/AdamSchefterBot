@@ -1,5 +1,7 @@
 import feedparser
 import requests
+import os
+import json
 
 # Discord Webhook URL
 DISCORD_WEBHOOK_URL = 'https://discord.com/api/webhooks/1339418503416905728/dcuSivzNerI9Po6Hd3lOrgrsAWuePIbzqedO3quaHomsQL4faSMFcaRf008P-M3P3WVw'
@@ -7,19 +9,35 @@ DISCORD_WEBHOOK_URL = 'https://discord.com/api/webhooks/1339418503416905728/dcuS
 # Twitter RSS feed URL
 TWITTER_RSS_FEED_URL = 'https://nitter.net/adamschefter/rss'
 
+# File to keep track of the last tweet sent
+LAST_TWEET_FILE = 'last_tweet.json'
+
+def load_last_tweet():
+    """Load the last tweet that was sent to Discord."""
+    if os.path.exists(LAST_TWEET_FILE):
+        with open(LAST_TWEET_FILE, 'r') as file:
+            return json.load(file)
+    return None
+
+def save_last_tweet(tweet_id):
+    """Save the last tweet's ID that was sent to Discord."""
+    with open(LAST_TWEET_FILE, 'w') as file:
+        json.dump({"tweet_id": tweet_id}, file)
+
 def fetch_tweets_from_rss():
-    # Parse the RSS feed from the Twitter account
+    """Fetch the latest tweets from the RSS feed."""
     feed = feedparser.parse(TWITTER_RSS_FEED_URL)
     
     tweets = []
     for entry in feed.entries:
         tweet_message = entry.title  # Entry title contains the tweet text
-        tweets.append(tweet_message)
+        tweet_id = entry.id  # Entry ID is unique for each tweet
+        tweets.append((tweet_message, tweet_id))
     
     return tweets
 
 def send_to_discord(message):
-    # Send the tweet message to the Discord webhook
+    """Send a tweet message to the Discord webhook."""
     data = {
         "content": message
     }
@@ -30,12 +48,20 @@ def send_to_discord(message):
         print("Message sent to Discord successfully!")
 
 def main():
-    # Fetch tweets from RSS feed
+    # Load the last tweet sent to Discord
+    last_sent_tweet = load_last_tweet()
+    last_sent_tweet_id = last_sent_tweet['tweet_id'] if last_sent_tweet else None
+    
+    # Fetch the latest tweets from the RSS feed
     tweets = fetch_tweets_from_rss()
     
-    # Send the latest tweet to Discord (you can modify this to send multiple tweets if needed)
-    if tweets:
-        send_to_discord(tweets[0])  # Send the most recent tweet
+    # Send new tweets that have not been sent yet
+    for tweet_message, tweet_id in reversed(tweets):
+        if tweet_id != last_sent_tweet_id:
+            send_to_discord(tweet_message)
+            save_last_tweet(tweet_id)
+        else:
+            print("No new tweets to send.")
 
 if __name__ == "__main__":
     main()
