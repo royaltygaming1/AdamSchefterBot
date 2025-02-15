@@ -1,0 +1,10 @@
+def fetch_tweets_from_rss():
+    """Fetch the latest tweets from the RSS feed."""
+    feed = feedparser.parse(TWITTER_RSS_FEED_URL)
+    print(feed)  # Add this to see the full feed data
+    tweets = []
+    for entry in feed.entries:
+        tweet_message = entry.title  # Entry title contains the tweet text
+        tweet_id = entry.id  # Entry ID is unique for each tweet
+        tweets.append((tweet_message, tweet_id))
+    return tweets
